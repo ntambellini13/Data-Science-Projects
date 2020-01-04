@@ -14,11 +14,14 @@ labelencoder_X_1 = LabelEncoder()
 X[:, 1] = labelencoder_X_1.fit_transform(X[:, 1])
 labelencoder_X_2 = LabelEncoder()
 X[:, 2] = labelencoder_X_2.fit_transform(X[:, 2])
+
 from sklearn.compose import ColumnTransformer
 ct = ColumnTransformer  (
     [('one_hot_encoder', OneHotEncoder(), [1])],   
     remainder='passthrough')
 X = np.array(ct.fit_transform(X), dtype=np.float)
+
+X = X[:, 1:]
 
 # Splitting the dataset into the Training set and Test set
 from sklearn.model_selection import train_test_split
@@ -36,18 +39,16 @@ X_test = sc.transform(X_test)
 import keras
 from keras.models import Sequential
 from keras.layers import Dense
-from keras.layers import Dropout
+# from keras.layers import Dropout
 
 # Initialising the ANN
 classifier = Sequential()
 
 # Adding the input layer and the first hidden layer
 classifier.add(Dense(units = 6, kernel_initializer = 'uniform', activation = 'relu', input_dim = 11))
-# classifier.add(Dropout(p = 0.1))
 
 # Adding the second hidden layer
 classifier.add(Dense(units = 6, kernel_initializer = 'uniform', activation = 'relu'))
-# classifier.add(Dropout(p = 0.1))
 
 # Adding the output layer
 classifier.add(Dense(units = 1, kernel_initializer = 'uniform', activation = 'sigmoid'))
@@ -85,7 +86,7 @@ cm = confusion_matrix(y_test, y_pred)
 
 # Part 4 - Evaluating, Improving and Tuning the ANN
 
-# Evaluating the ANN
+# Evaluating the ANN - kfold CV
 from keras.wrappers.scikit_learn import KerasClassifier
 from sklearn.model_selection import cross_val_score
 from keras.models import Sequential
@@ -104,8 +105,37 @@ variance = accuracies.std()
 
 # Improving the ANN
 # Dropout Regularization to reduce overfitting if needed
+from keras.layers import Dropout
 
-# Tuning the ANN
+# Initialising the ANN
+classifier = Sequential()
+
+# Adding the input layer and the first hidden layer
+classifier.add(Dense(units = 6, kernel_initializer = 'uniform', activation = 'relu', input_dim = 11))
+classifier.add(Dropout(p = 0.1))
+
+# Adding the second hidden layer
+classifier.add(Dense(units = 6, kernel_initializer = 'uniform', activation = 'relu'))
+classifier.add(Dropout(p = 0.1))
+
+# Adding the output layer
+classifier.add(Dense(units = 1, kernel_initializer = 'uniform', activation = 'sigmoid'))
+
+# Compiling the ANN
+classifier.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
+
+# Fitting the ANN to the Training set
+classifier.fit(X_train, y_train, batch_size = 10, epochs = 100)
+
+# Part 3 - Making predictions and evaluating the model
+
+# Predicting the Test set results
+y_pred = classifier.predict(X_test)
+y_pred = (y_pred > 0.5)
+
+cm = confusion_matrix(y_test, y_pred)
+
+# Tuning the ANN - parameter tuning
 from keras.wrappers.scikit_learn import KerasClassifier
 from sklearn.model_selection import GridSearchCV
 from keras.models import Sequential
